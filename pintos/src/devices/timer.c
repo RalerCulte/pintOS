@@ -17,6 +17,10 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+/* Указатели на начало очереди (queue) и элемент, после которого нужно очищать память */
+LinkedList* queue = NULL;
+LinkedList* started = NULL;
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -84,6 +88,50 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
+/* Функция добавления потока в очередь спящих потоков */
+void
+add(LinkedList** head, int64_t ticks) {
+
+    if ((*head) == NULL) {
+        (*head) = (LinkedList*)malloc(sizeof(LinkedList));
+        (*head)->time = ticks + timer_ticks();
+        (*head)->element = thread_current();
+        (*head)->nextPointer = NULL;
+        started = *head;
+        return;
+    } else {
+        LinkedList* current = *head;
+        LinkedList* prev = NULL;
+        LinkedList* newElement = (LinkedList*)malloc(sizeof(LinkedList));
+        newElement->time = ticks + timer_ticks();
+        newElement->element = thread_current();
+
+        while (current != NULL && newElement->time > current->time) {
+            prev = current;
+            current = current->nextPointer;
+        }
+        if (prev == NULL) {
+            memcpy(current, (*head), sizeof(LinkedList));
+            (*head) = newElement;
+            newElement->nextPointer = current;
+        }
+        else {
+            prev->nextPointer = newElement;
+            newElement->nextPointer = current;
+        }
+    }
+}
+
+/* Обновление листа -> удаление разбуженных потоков */
+void
+updList() {
+    while (started != NULL && started->time <= timer_ticks()) {
+        LinkedList* next = started->nextPointer;
+        free(started);
+        started = next;
+    }
+}
+
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 void
@@ -92,8 +140,18 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  /* Отключение прерываний */
+  enum intr_level old_level = intr_disable ();
+
+  /* Добавление + обновление */
+  updList();
+  add(&queue, ticks);
+  thread_block();
+
+  /* Включение прерываний */
+  intr_set_level(old_level);
+
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -172,6 +230,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  /* Обработка прерывания таймера -> будит потоки */
+  while (queue != NULL && queue->time <= timer_ticks()) {
+        thread_unblock(queue->element);
+        queue = queue->nextPointer;
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

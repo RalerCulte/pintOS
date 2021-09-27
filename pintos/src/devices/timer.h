@@ -7,6 +7,16 @@
 /* Number of timer interrupts per second. */
 #define TIMER_FREQ 100
 
+/* Добавление структуры элемента очереди + заголовки функций */
+typedef struct {
+    int64_t time;
+    struct thread* element;
+    struct LinkedList* nextPointer;
+} LinkedList;
+
+void updList();
+void add(LinkedList** head, int64_t ticks);
+
 void timer_init (void);
 void timer_calibrate (void);
 
