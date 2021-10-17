@@ -1,7 +1,7 @@
 # PintOS Project
 ___
 ## Lab 1
-* System timer
+* Alarm timer
 ___
 ## Lab 2 
 * Schedule 
