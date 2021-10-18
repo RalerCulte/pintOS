@@ -1,9 +1,9 @@
-# PintOS Project
+## PintOS Project
 ___
-## Lab 1
+### Lab 1
 * Alarm timer
 ___
-## Lab 2 
+### Lab 2 
 * Schedule 
 * Priority donations
 ___
