@@ -91,6 +91,8 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
 
     int64_t oldPriority;
+    struct list locksAcquired;
+    struct thread* don;
     bool donated;
 
     /* Shared between thread.c and synch.c. */

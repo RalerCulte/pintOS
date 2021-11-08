@@ -13,8 +13,9 @@ struct semaphore
 };
 
 struct semaphore_elem {
-    struct list_elem elem;              /* List element. */
-    struct semaphore semaphore;         /* This semaphore. */
+    struct list_elem elem;
+    struct semaphore semaphore;
+    int64_t priority;
 };
 
 void sema_init (struct semaphore *, unsigned value);
@@ -28,7 +29,9 @@ struct lock
 {
     struct thread *holder;      /* Thread holding lock (for debugging). */
     struct semaphore semaphore; /* Binary semaphore controlling access. */
-    struct thread* waiter;
+    struct list_elem lockElem;
+    int64_t maxPriority;
+    bool wait;
 };
 
 void lock_init (struct lock *);
